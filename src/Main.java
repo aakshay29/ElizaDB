@@ -7,6 +7,9 @@ public class Main {
 	static Scanner sc = new Scanner(System.in);
 	static PrintWriter writer = null;
 	public static void main(String[] args) {
+//		Thread threadA = new Interrupt();	
+//		threadA.start();
+		
 		String answerEliza = null;
 		try {
 			writer = new PrintWriter(new File("output.txt"));
@@ -24,7 +27,6 @@ public class Main {
 				break;
 			}
 			else{
-				qp.populateSets(name);
 				answerEliza = qp.getAnswer(query, name);
 				System.out.println(answerEliza);
 				writer.println(answerEliza);

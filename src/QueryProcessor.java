@@ -1,12 +1,13 @@
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class QueryProcessor {
-	public Map<Integer, String> hedgeSet = new HashMap<Integer, String>();
-	public Map<Integer, String> qualifierSet = new HashMap<Integer, String>();
-	public Map<String, String> replacementMap = new HashMap<String, String>();
 	Random rnd = new Random();
+	String query = null;
 
 	public String getAnswer(String query, String name) {
 		String answer = null;
@@ -15,64 +16,133 @@ public class QueryProcessor {
 		String[] parts = query.split(delim);
 
 		if (randomInt == 1) {
-			int randomIntHedge = 1 + rnd.nextInt(8);
-			answer = hedgeSet.get(randomIntHedge);
-		} 
-		else if (randomInt == 2) {
+			query = "SELECT * FROM (SELECT * FROM ElizaCommands ORDER BY DBMS_RANDOM.RANDOM) WHERE rownum=1 AND categoryID = 2";
+			answer = getCommand(query);
+		} else if (randomInt == 2) {
 			String temp = "";
 			for (int i = 0; i < parts.length; i++) {
-				if (replacementMap.containsKey(parts[i])) {
-					parts[i] = replacementMap.get(parts[i]);
+				String replacedString = getReplacement(parts[i]);
+				if (replacedString != null) {
+					parts[i] = replacedString;
 				}
 				temp += parts[i] + " ";
 			}
-			int randomIntQualifier = 1 + rnd.nextInt(4);
-			answer = qualifierSet.get(randomIntQualifier) + temp;
+			query = "SELECT * FROM (SELECT * FROM ElizaCommands ORDER BY DBMS_RANDOM.RANDOM) WHERE rownum=1 AND categoryID = 3";
+			answer = getCommand(query) + temp;
 		}
 		for (int j = 0; j < parts.length; j++) {
 			if (parts[j].equalsIgnoreCase("sad")) {
-				answer = "Why are you sad " + name + "?";
+				answer = getKeyword("sad");
 			}
 			if (parts[j].equalsIgnoreCase("gloomy")) {
-				answer = "Why are you gloomy " + name + "?";
+				answer = getKeyword("gloomy");
 			}
 			if (parts[j].equalsIgnoreCase("bad")) {
-				answer = "You should never feel bad about anything.";
+				answer = getKeyword("bad");
 			}
 			if (parts[j].equalsIgnoreCase("happy")) {
-				answer = "Happiness is the key to success.";
+				answer = getKeyword("happy");
 			}
 			if (parts[j].equalsIgnoreCase("life")) {
-				answer = "I know you have a great potential in life.";
+				answer = getKeyword("life");
 			}
 			if (parts[j].equalsIgnoreCase("run")) {
-				answer = "No body can run away from important things in life.";
+				answer = getKeyword("run");
 			}
-			if (parts[j].equalsIgnoreCase("yeah") || parts[j].equalsIgnoreCase("yes") || parts[j].equalsIgnoreCase("yup")) {
-				answer = "Why do you think so?";
+			if (parts[j].equalsIgnoreCase("yeah") || parts[j].equalsIgnoreCase("yes")
+					|| parts[j].equalsIgnoreCase("yup")) {
+				answer = getKeyword("yeah");
 			}
 		}
 		return answer;
 	}
 
-	public void populateSets(String name) {
-		hedgeSet.put(1, "Please tell me more.");
-		hedgeSet.put(2, "Many of my patients tell me the same thing.");
-		hedgeSet.put(3, "That is a very common complaint these days I must say.");
-		hedgeSet.put(4, "When did this start?");
-		hedgeSet.put(5, "Hmm...Go on");
-		hedgeSet.put(6, "Really?");
-		hedgeSet.put(7, "I see whats going on here. Give me more details.");
-		hedgeSet.put(8, "How often do you feel this way?");
+	public static String getCommand(String sql) {
+		String returnString = null;
+		Connection con = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			Class.forName("oracle.jdbc.driver.OracleDriver");
+			con = DriverManager.getConnection("jdbc:oracle:thin:ora1/ora1@localhost:1521:orcl");
+			stmt = con.createStatement();
+			rs = stmt.executeQuery(sql);
+			while (rs.next()) {
+				returnString = rs.getString("data");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+				stmt.close();
+				con.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return returnString;
+	}
 
-		qualifierSet.put(1, name + ", why do you say ");
-		qualifierSet.put(2, "You seem to think that ");
-		qualifierSet.put(3, "Well...you think ");
-		qualifierSet.put(4, "So you are saying that ");
-
-		replacementMap.put("i", "you");
-		replacementMap.put("me", "you");
-		replacementMap.put("my", "your");
-		replacementMap.put("am", "are");
+	public static String getReplacement(String value) {
+		String returnString = null;
+		Connection con = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		String sql = "SELECT * FROM ElizaReplacements where data1='" + value + "'";
+		try {
+			Class.forName("oracle.jdbc.driver.OracleDriver");
+			con = DriverManager.getConnection("jdbc:oracle:thin:ora1/ora1@localhost:1521:orcl");
+			stmt = con.createStatement();
+			rs = stmt.executeQuery(sql);
+			while (rs.next()) {
+				returnString = rs.getString("data2");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+				stmt.close();
+				con.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return returnString;
+	}
+	
+	public static String getKeyword(String value) {
+		String returnString = null;
+		Connection con = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		String sql = "SELECT * FROM ElizaKeywords where keyword='" + value + "'";
+		try {
+			Class.forName("oracle.jdbc.driver.OracleDriver");
+			con = DriverManager.getConnection("jdbc:oracle:thin:ora1/ora1@localhost:1521:orcl");
+			stmt = con.createStatement();
+			rs = stmt.executeQuery(sql);
+			while (rs.next()) {
+				returnString = rs.getString("data");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+				stmt.close();
+				con.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return returnString;
 	}
 }
